@@ -1,6 +1,8 @@
 package ru.bmstu.service;
 
 import ru.bmstu.domain.Person;
+import ru.bmstu.domain.Student;
+
 
 public class PersonPrinter {
 
@@ -21,4 +23,23 @@ public class PersonPrinter {
         }
         System.out.println("-------------------------");
     }
+
+    public static void printStudentInfoWithSubjects(Student student) {
+        System.out.println("--- Полная информация о студенте ---");
+        System.out.println("Имя: " + student.getFirstName());
+        System.out.println("Фамилия: " + student.getSecondName());
+        System.out.println("Группа: " + student.getGroup());
+        System.out.println("Средний балл: " + String.format("%.2f", student.getAverageGrade()));
+
+        if (student.getSubjects().isEmpty()) {
+            System.out.println("Дисциплины: не указаны.");
+        } else {
+            System.out.println("Дисциплины (отсортированы в обратном порядке):");
+            student.getSubjects().forEach((subject, grade) ->
+                    System.out.println("\t- " + subject + ": " + grade)
+            );
+        }
+        System.out.println("------------------------------------");
+    }
+
 }
