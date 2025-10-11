@@ -1,5 +1,7 @@
 package ru.bmstu.domain;
 
+import ru.bmstu.exception.InvalidPhoneNumberException;
+
 public class Person {
     private String firstName;
     private String secondName;
@@ -39,7 +41,13 @@ public class Person {
         this.age = age;
     }
 
-    public void setPhone(String phone) {
+    public void setPhone(String phone) throws InvalidPhoneNumberException {
+        if (phone == null || !phone.matches("^[0-9()+\\-]{7,15}$")) {
+            throw new InvalidPhoneNumberException(
+                    "Некорректный формат номера телефона. " +
+                            "Допустимы цифры, (), +, -, длина от 7 до 15 символов."
+            );
+        }
         this.phone = phone;
     }
 }
