@@ -10,31 +10,27 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MainTask2 {
 
-    private static final int NUM_CONSUMERS = 3; // Количество потоков-обработчиков
-    private static final int TOTAL_ORDERS = 10; // Общее количество заказов
+    private static final int NUM_CONSUMERS = 3;
+    private static final int TOTAL_ORDERS = 10;
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {
-        // Общие ресурсы
         Queue<String> orderQueue = new LinkedList<>();
         ReentrantLock lock = new ReentrantLock();
         AtomicInteger processedOrdersCount = new AtomicInteger(0);
 
-        // ExecutorService для управления потоками
         ExecutorService executor = Executors.newFixedThreadPool(NUM_CONSUMERS + 1); // +1 для поставщика
 
-        // --- 1. Поставщик заказов (Producer) ---
         Runnable producerTask = () -> {
             for (int i = 1; i <= TOTAL_ORDERS; i++) {
-                lock.lock(); // Захватываем блокировку
+                lock.lock();
                 try {
                     String order = "Заказ #" + i;
                     orderQueue.add(order);
                     System.out.println("Поставщик добавил в очередь: " + order);
                 } finally {
-                    lock.unlock(); // Освобождаем блокировку в блоке finally
+                    lock.unlock();
                 }
                 try {
-                    // Имитация времени на поступление нового заказа
                     Thread.sleep(200);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -44,7 +40,6 @@ public class MainTask2 {
 
         executor.submit(producerTask);
 
-        // --- 2. Обработчики заказов (Consumers) ---
         List<Future<String>> consumerFutures = new ArrayList<>();
 
         for (int i = 0; i < NUM_CONSUMERS; i++) {
@@ -52,23 +47,21 @@ public class MainTask2 {
             Callable<String> consumerTask = () -> {
                 while (processedOrdersCount.get() < TOTAL_ORDERS) {
                     String order = null;
-                    lock.lock(); // Захватываем блокировку
+                    lock.lock();
                     try {
                         if (!orderQueue.isEmpty()) {
                             order = orderQueue.poll();
                         }
                     } finally {
-                        lock.unlock(); // Освобождаем блокировку
+                        lock.unlock();
                     }
 
                     if (order != null) {
                         System.out.println("Обработчик " + consumerId + " начал обрабатывать: " + order);
-                        // Имитация обработки заказа
                         Thread.sleep(500 + (long)(Math.random() * 500));
                         processedOrdersCount.incrementAndGet();
                         System.out.println("Обработчик " + consumerId + " завершил обработку: " + order);
                     } else {
-                        // Если очередь пуста, немного подождать
                         Thread.sleep(100);
                     }
                 }
@@ -77,9 +70,8 @@ public class MainTask2 {
             consumerFutures.add(executor.submit(consumerTask));
         }
 
-        // --- 3. Получение результатов и завершение работы ---
         for (Future<String> future : consumerFutures) {
-            System.out.println(future.get()); // Блокирующая операция, ждет завершения Callable
+            System.out.println(future.get());
         }
 
         executor.shutdown();

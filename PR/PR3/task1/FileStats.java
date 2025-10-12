@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-// Класс для хранения результата анализа одного файла
 class FileStats {
     private final long totalSalary;
     private final int employeeCount;

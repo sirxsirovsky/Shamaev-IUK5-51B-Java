@@ -41,7 +41,6 @@ class FileProcessorTask implements Runnable {
             e.printStackTrace();
         }
 
-        // Сохраняем результат в потокобезопасную Map
         resultsMap.put(fileName, new FileStats(totalSalary, employeeCount));
         System.out.println("Поток " + Thread.currentThread().getName() + " завершил обработку файла " + fileName);
     }

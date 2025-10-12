@@ -10,7 +10,6 @@ public class MainTask3 {
     public static void main(String[] args) throws InterruptedException {
         IngredientStore store = new IngredientStore();
 
-        // Заказ 1: ингредиентов должно хватить
         Order pizzaOrder = new Order("Пицца Пепперони", 2000, 600.0);
         Map<String, Integer> pizzaIngredients = Map.of(
                 "Тесто для пиццы", 1,
@@ -20,10 +19,8 @@ public class MainTask3 {
         );
         processOrder(pizzaOrder, pizzaIngredients, store);
 
-        // Небольшая пауза между заказами
         Thread.sleep(500);
 
-        // Заказ 2: ингредиентов не хватит (котлет всего 5, а нужно 10)
         Order burgerOrder = new Order("Двойной Бургер", 1500, 450.0);
         Map<String, Integer> burgerIngredients = Map.of(
                 "Котлета", 10, // Требуем больше, чем есть в наличии
@@ -31,7 +28,6 @@ public class MainTask3 {
         );
         processOrder(burgerOrder, burgerIngredients, store);
 
-        // Ждем завершения асинхронных операций, чтобы увидеть вывод
         Thread.sleep(5000);
     }
 
@@ -39,15 +35,12 @@ public class MainTask3 {
         System.out.println("\n--- Поступил новый заказ: " + order.dishName() + " ---");
 
         CompletableFuture.supplyAsync(() -> {
-            // --- Этап 1: Проверка наличия ингредиентов ---
             System.out.println("1. Проверка ингредиентов для: " + order.dishName());
             if (!store.checkAndUseIngredients(ingredients)) {
-                // Если ингредиентов нет, выбрасываем исключение, которое будет поймано в `exceptionally`
                 throw new IllegalStateException("Недостаточно ингредиентов для " + order.dishName());
             }
             return order;
         }).thenApplyAsync(o -> {
-            // --- Этап 2: Приготовление блюда ---
             System.out.println("2. Начало приготовления: " + o.dishName());
             try {
                 Thread.sleep(o.cookingTimeMs());
@@ -57,7 +50,6 @@ public class MainTask3 {
             System.out.println("   Блюдо '" + o.dishName() + "' готово!");
             return o;
         }).thenApply(o -> {
-            // --- Этап 3: Расчёт стоимости ---
             System.out.println("3. Расчет стоимости для: " + o.dishName());
             double finalPrice = o.price();
             if (finalPrice > 500) {
@@ -66,12 +58,10 @@ public class MainTask3 {
             }
             return "Блюдо '" + o.dishName() + "' готово. Итоговая стоимость: " + finalPrice + " руб.";
         }).thenAccept(result -> {
-            // --- Этап 4: Оповещение о готовности ---
             System.out.println("4. [УВЕДОМЛЕНИЕ] " + result);
         }).exceptionally(ex -> {
-            // --- Обработка ошибок ---
             System.err.println("ОШИБКА ОБРАБОТКИ ЗАКАЗА: " + ex.getMessage());
-            return null; // `exceptionally` должен что-то вернуть
+            return null;
         });
     }
 }
