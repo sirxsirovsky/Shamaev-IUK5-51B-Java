@@ -9,74 +9,43 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MainTask2 {
+    public static void main(String[] args) {
+        final int NUM_CONSUMERS = 3;
+        final int TOTAL_ORDERS = 10;
 
-    private static final int NUM_CONSUMERS = 3;
-    private static final int TOTAL_ORDERS = 10;
-
-    public static void main(String[] args) throws InterruptedException, ExecutionException {
         Queue<String> orderQueue = new LinkedList<>();
         ReentrantLock lock = new ReentrantLock();
         AtomicInteger processedOrdersCount = new AtomicInteger(0);
 
-        ExecutorService executor = Executors.newFixedThreadPool(NUM_CONSUMERS + 1); // +1 для поставщика
+        ExecutorService executor = Executors.newFixedThreadPool(NUM_CONSUMERS + 1);
 
-        Runnable producerTask = () -> {
-            for (int i = 1; i <= TOTAL_ORDERS; i++) {
-                lock.lock();
-                try {
-                    String order = "Заказ #" + i;
-                    orderQueue.add(order);
-                    System.out.println("Поставщик добавил в очередь: " + order);
-                } finally {
-                    lock.unlock();
-                }
-                try {
-                    Thread.sleep(200);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        };
-
-        executor.submit(producerTask);
+        executor.submit(new OrderProducer(orderQueue, lock, TOTAL_ORDERS));
 
         List<Future<String>> consumerFutures = new ArrayList<>();
-
-        for (int i = 0; i < NUM_CONSUMERS; i++) {
-            final int consumerId = i + 1;
-            Callable<String> consumerTask = () -> {
-                while (processedOrdersCount.get() < TOTAL_ORDERS) {
-                    String order = null;
-                    lock.lock();
-                    try {
-                        if (!orderQueue.isEmpty()) {
-                            order = orderQueue.poll();
-                        }
-                    } finally {
-                        lock.unlock();
-                    }
-
-                    if (order != null) {
-                        System.out.println("Обработчик " + consumerId + " начал обрабатывать: " + order);
-                        Thread.sleep(500 + (long)(Math.random() * 500));
-                        processedOrdersCount.incrementAndGet();
-                        System.out.println("Обработчик " + consumerId + " завершил обработку: " + order);
-                    } else {
-                        Thread.sleep(100);
-                    }
-                }
-                return "Обработчик " + consumerId + " завершил свою работу.";
-            };
-            consumerFutures.add(executor.submit(consumerTask));
-        }
-
-        for (Future<String> future : consumerFutures) {
-            System.out.println(future.get());
+        for (int i = 1; i <= NUM_CONSUMERS; i++) {
+            Callable<String> consumer = new OrderConsumer("Потребитель #" + i, orderQueue, lock, processedOrdersCount);
+            consumerFutures.add(executor.submit(consumer));
         }
 
         executor.shutdown();
-        executor.awaitTermination(1, TimeUnit.MINUTES);
+        try {
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                System.out.println("завершение.");
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
 
-        System.out.println("\nВсего обработано заказов: " + processedOrdersCount.get());
+        System.out.println("\n--- Результаты работы потребителей ---");
+        for (Future<String> future : consumerFutures) {
+            try {
+                System.out.println(future.get());
+            } catch (InterruptedException | ExecutionException e) {
+                System.err.println("Ошибка при получении результата от потребителя: " + e.getMessage());
+            }
+        }
+
+        System.out.println("\nОбщее количество обработанных заказов: " + processedOrdersCount.get());
     }
 }

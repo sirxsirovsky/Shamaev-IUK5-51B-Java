@@ -1,67 +1,52 @@
 package task3;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainTask3 {
-
     public static void main(String[] args) throws InterruptedException {
-        IngredientStore store = new IngredientStore();
+        RestaurantService restaurant = new RestaurantService();
 
-        Order pizzaOrder = new Order("Пицца Пепперони", 2000, 600.0);
-        Map<String, Integer> pizzaIngredients = Map.of(
-                "Тесто для пиццы", 1,
-                "Сыр", 2,
-                "Томатный соус", 1,
-                "Пепперони", 1
-        );
-        processOrder(pizzaOrder, pizzaIngredients, store);
+        ExecutorService executor = Executors.newFixedThreadPool(4);
 
-        Thread.sleep(500);
+        Order order1 = new Order("Пицца Пепперони", 2000, 600.0);
+        Order order2 = new Order("Салат Цезарь", 500, 350.0);
+        Order order3 = new Order("Стейк Рибай", 3000, 1500.0);
 
-        Order burgerOrder = new Order("Двойной Бургер", 1500, 450.0);
-        Map<String, Integer> burgerIngredients = Map.of(
-                "Котлета", 10, // Требуем больше, чем есть в наличии
-                "Булочка", 2
-        );
-        processOrder(burgerOrder, burgerIngredients, store);
+        System.out.println("--- Размещение заказов ---");
 
-        Thread.sleep(5000);
-    }
+        CompletableFuture<Void> future1 = CompletableFuture.supplyAsync(() -> restaurant.checkIngredients(order1), executor)
+                .thenApplyAsync(restaurant::cook, executor)
+                .thenApplyAsync(restaurant::calculateCost, executor)
+                .thenAcceptAsync(restaurant::notifyReady, executor)
+                .exceptionally(ex -> {
+                    System.err.println("❌ Ошибка обработки заказа '" + order1.getDishName() + "': " + ex.getMessage());
+                    return null;
+                });
 
-    public static void processOrder(Order order, Map<String, Integer> ingredients, IngredientStore store) {
-        System.out.println("\n--- Поступил новый заказ: " + order.dishName() + " ---");
+        CompletableFuture<Void> future2 = CompletableFuture.supplyAsync(() -> restaurant.checkIngredients(order2), executor)
+                .thenApplyAsync(restaurant::cook, executor)
+                .thenApplyAsync(restaurant::calculateCost, executor)
+                .thenAcceptAsync(restaurant::notifyReady, executor)
+                .exceptionally(ex -> {
+                    System.err.println("❌ Ошибка обработки заказа '" + order2.getDishName() + "': " + ex.getMessage());
+                    return null;
+                });
 
-        CompletableFuture.supplyAsync(() -> {
-            System.out.println("1. Проверка ингредиентов для: " + order.dishName());
-            if (!store.checkAndUseIngredients(ingredients)) {
-                throw new IllegalStateException("Недостаточно ингредиентов для " + order.dishName());
-            }
-            return order;
-        }).thenApplyAsync(o -> {
-            System.out.println("2. Начало приготовления: " + o.dishName());
-            try {
-                Thread.sleep(o.cookingTimeMs());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            System.out.println("   Блюдо '" + o.dishName() + "' готово!");
-            return o;
-        }).thenApply(o -> {
-            System.out.println("3. Расчет стоимости для: " + o.dishName());
-            double finalPrice = o.price();
-            if (finalPrice > 500) {
-                finalPrice *= 0.90; // Скидка 10%
-                System.out.println("   Применена скидка 10%. Итоговая цена: " + finalPrice);
-            }
-            return "Блюдо '" + o.dishName() + "' готово. Итоговая стоимость: " + finalPrice + " руб.";
-        }).thenAccept(result -> {
-            System.out.println("4. [УВЕДОМЛЕНИЕ] " + result);
-        }).exceptionally(ex -> {
-            System.err.println("ОШИБКА ОБРАБОТКИ ЗАКАЗА: " + ex.getMessage());
-            return null;
-        });
+        CompletableFuture<Void> future3 = CompletableFuture.supplyAsync(() -> restaurant.checkIngredients(order3), executor)
+                .thenApplyAsync(restaurant::cook, executor)
+                .thenApplyAsync(restaurant::calculateCost, executor)
+                .thenAcceptAsync(restaurant::notifyReady, executor)
+                .exceptionally(ex -> {
+                    System.err.println("❌ Ошибка обработки заказа '" + order3.getDishName() + "': " + ex.getMessage());
+                    return null;
+                });
+
+        System.out.println("--- Заказы отправлены на кухню. Ожидаем завершения... ---");
+
+        CompletableFuture.allOf(future1, future2, future3).join();
+
+        executor.shutdown();
     }
 }

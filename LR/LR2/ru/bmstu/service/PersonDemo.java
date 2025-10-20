@@ -2,6 +2,7 @@ package ru.bmstu.service;
 
 import ru.bmstu.domain.Person;
 import ru.bmstu.domain.Student;
+import ru.bmstu.exception.InvalidPhoneNumberException;
 
 public class PersonDemo {
     private final Person person;
@@ -11,9 +12,22 @@ public class PersonDemo {
     }
 
     public void demo() {
-        System.out.println("=== Демонстрация работы с Person ===");
         PersonPrinter.printFI(this.person);
         PersonPrinter.printInfo(this.person);
+        try {
+            this.person.setPhone("123");
+            System.out.println("Успешно!");
+        } catch (InvalidPhoneNumberException e) {
+            System.out.println("ОШИБКА: " + e.getMessage());
+        }
+
+        try {
+            System.out.print("Устанавливаем корректный номер... ");
+            this.person.setPhone("+7(999)123-45-67");
+            System.out.println("Успешно! Новый номер: " + this.person.getPhone());
+        } catch (InvalidPhoneNumberException e) {
+            System.out.println("ОШИБКА: " + e.getMessage());
+        }
     }
 
     public static void demonstrateStudent() {
@@ -30,7 +44,6 @@ public class PersonDemo {
         System.out.println("\n\n=== Демонстрация работы StudentManager ===");
         StudentManager manager = new StudentManager();
 
-        // Создаем и добавляем студентов
         Student petr = new Student("Петр", "Петров", 20, "ИУК5-31Б", 2);
         petr.addSubject("Физика", 5);
         petr.addSubject("Математика", 4);
@@ -44,13 +57,11 @@ public class PersonDemo {
         manager.addStudent(anna);
         manager.printAllStudents();
 
-        // Поиск студентов
         System.out.println("\n--- Поиск студентов ---");
         System.out.println("Ищем студента по имени 'Анна': " + manager.findByName("Анна").getFirstName());
         System.out.println("Ищем студентов со средним баллом выше 4.5:");
         manager.findByAverageGrade(4.5).forEach(s -> System.out.println("\t- " + s.getFirstName()));
 
-        // Удаление студента
         System.out.println("\n--- Удаление студента ---");
         manager.removeStudent("Петр");
         manager.printAllStudents();
