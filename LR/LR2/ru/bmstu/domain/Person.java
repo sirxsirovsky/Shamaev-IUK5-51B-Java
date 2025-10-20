@@ -42,10 +42,9 @@ public class Person {
     }
 
     public void setPhone(String phone) throws InvalidPhoneNumberException {
-        if (phone == null || !phone.matches("^[0-9()+\\-]{7,15}$")) {
+        if (phone == null || !phone.matches("^\\\\+7\\\\(\\\\d{3}\\\\)\\\\d{3}\\\\-\\\\d{2}\\\\-\\\\d{2}$")) {
             throw new InvalidPhoneNumberException(
-                    "Некорректный формат номера телефона. " +
-                            "Допустимы цифры, (), +, -, длина от 7 до 15 символов."
+                    "Некорректный формат номера телефона. "
             );
         }
         this.phone = phone;
